@@ -13,12 +13,15 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"time"
 
 	"github.com/Rain-kl/Wavelet/internal/infra/config"
 	db "github.com/Rain-kl/Wavelet/internal/infra/persistence"
+	"github.com/Rain-kl/Wavelet/internal/repository"
+	"github.com/Rain-kl/Wavelet/pkg/logger"
 	"github.com/gin-gonic/gin"
 
 	"github.com/Rain-kl/Wavelet/internal/shared/response"
@@ -284,14 +287,27 @@ func ExportDatabase(c *gin.Context) {
 	}
 }
 
-// exportSQLite 以 HTTP 附件方式下载 SQLite .db 文件
+// exportSQLite 以 HTTP 附件方式下载 SQLite 一致性快照。
 func exportSQLite(c *gin.Context) {
-	path := config.Config.Database.SQLitePath
-	if path == "" {
-		path = "./data/openflare.db"
+	dir, err := os.MkdirTemp("", "openflare-db-export-*")
+	if err != nil {
+		logger.ErrorF(c.Request.Context(), "[db-export] create temporary directory failed: %v", err)
+		response.AbortInternal(c, "无法创建数据库导出文件")
+		return
+	}
+	defer func() {
+		if err := os.RemoveAll(dir); err != nil {
+			logger.ErrorF(c.Request.Context(), "[db-export] remove temporary directory failed: %v", err)
+		}
+	}()
+	path := filepath.Join(dir, "openflare.db")
+	if err := repository.ExportSQLiteSnapshot(c.Request.Context(), path); err != nil {
+		logger.ErrorF(c.Request.Context(), "[db-export] create SQLite snapshot failed: %v", err)
+		response.AbortInternal(c, "无法导出数据库")
+		return
 	}
 
-	f, err := os.Open(path) //nolint:gosec // path is loaded from server startup configuration, not user input
+	f, err := os.Open(path) //nolint:gosec // path is generated in a private temporary directory, not from user input
 	if err != nil {
 		response.AbortInternal(c, "无法打开数据库文件: "+err.Error())
 		return

@@ -6,6 +6,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
 	"net/url"
@@ -58,6 +59,10 @@ func initSQLite() {
 		log.Fatalf("[SQLite] init connection failed: %v\n", err)
 	}
 
+	if err = enableSQLiteWAL(db); err != nil {
+		log.Fatalf("[SQLite] enable WAL failed: %v\n", err)
+	}
+
 	// Trace 注入
 	if err = db.Use(
 		newGORMTracingPlugin([]attribute.KeyValue{
@@ -69,6 +74,18 @@ func initSQLite() {
 	}
 
 	log.Printf("[SQLite] initialized (path: %s)\n", sqlitePath)
+}
+
+// enableSQLiteWAL 在文件数据库上启用 WAL；内存数据库仅支持 memory 日志模式。
+func enableSQLiteWAL(database *gorm.DB) error {
+	var mode string
+	if err := database.Raw("PRAGMA journal_mode = WAL").Scan(&mode).Error; err != nil {
+		return err
+	}
+	if mode != "wal" && mode != "memory" {
+		return fmt.Errorf("unexpected SQLite journal mode: %s", mode)
+	}
+	return nil
 }
 
 // initPostgres 初始化 PostgreSQL 数据库
