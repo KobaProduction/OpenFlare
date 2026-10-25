@@ -12,6 +12,7 @@ export function getFormattingLocale(): AppLocale {
 const localeToIntl: Record<AppLocale, string> = {
   'zh-CN': 'zh-CN',
   en: 'en-US',
+  ru: 'ru-RU',
 };
 
 export function formatDateTime(

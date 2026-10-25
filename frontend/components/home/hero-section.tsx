@@ -147,7 +147,7 @@ export const HeroSection = React.memo(function HeroSection({
                 <div className='space-y-4'>
                   <div className='space-y-2'>
                     <div className='text-xs text-muted-foreground mb-2'>
-                      Stack
+                      {rt('ui_technologyStack')}
                     </div>
                     <div className='flex flex-wrap gap-2'>
                       <span className='inline-block px-2 py-1 bg-blue-500/10 text-blue-500 rounded text-xs font-medium'>
@@ -161,10 +161,10 @@ export const HeroSection = React.memo(function HeroSection({
                   <div className='flex justify-between items-end'>
                     <div>
                       <p className='text-sm text-muted-foreground mb-1'>
-                        Ready for
+                        {rt('ui_readyFor')}
                       </p>
                       <div className='text-lg font-bold tracking-tight text-foreground flex items-center gap-1'>
-                        <span>Develop</span>
+                        <span>{rt('ui_development')}</span>
                       </div>
                     </div>
                     <div className='h-8 w-8 rounded-full bg-primary' />
@@ -186,9 +186,11 @@ export const HeroSection = React.memo(function HeroSection({
                     <Zap className='size-5' />
                   </div>
                   <div>
-                    <p className='text-xs text-muted-foreground'>Features</p>
+                    <p className='text-xs text-muted-foreground'>
+                      {rt('ui_features')}
+                    </p>
                     <div className='text-sm font-bold'>
-                      <span>Modern</span>
+                      <span>{rt('ui_modern')}</span>
                     </div>
                   </div>
                 </div>

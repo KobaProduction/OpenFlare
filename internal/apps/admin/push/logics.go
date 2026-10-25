@@ -13,7 +13,6 @@ import (
 	"github.com/Rain-kl/Wavelet/internal/infra/task"
 	"github.com/Rain-kl/Wavelet/internal/model"
 	"github.com/Rain-kl/Wavelet/internal/repository"
-	"github.com/Rain-kl/Wavelet/pkg/i18n"
 	pkgpush "github.com/Rain-kl/Wavelet/pkg/push"
 	"gorm.io/gorm"
 )
@@ -24,6 +23,10 @@ type smtpConfig struct {
 	Username string
 	Password string
 }
+
+// This persisted recipient alias predates localization. Display translations
+// must never expand the set of reserved routing identifiers.
+const legacySystemTarget = "\u7cfb\u7edf"
 
 func loadSMTPConfig(ctx context.Context) smtpConfig {
 	host, _ := repository.GetSystemConfigByKey(ctx, model.ConfigKeySMTPHost)
@@ -332,7 +335,7 @@ func resolveTargetUser(ctx context.Context, resolved string, _ string) (model.Us
 }
 
 func resolveSystemTarget(ctx context.Context, resolved string, channel string) (string, bool) {
-	if i18n.Translate("en", resolved) != "System" && resolved != "system" && resolved != "0" {
+	if resolved != legacySystemTarget && resolved != "system" && resolved != "0" {
 		return "", false
 	}
 	adminUser, err := repository.GetFirstAdminUser(ctx)

@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"regexp"
 	"sort"
+	"strings"
 	"testing"
 )
 
@@ -16,7 +17,10 @@ func TestResolveLocale(t *testing.T) {
 		{"en", "zh-CN", "en"},
 		{"zh-CN", "en", "zh-CN"},
 		{"invalid", "en;q=0.4,zh-CN;q=0.9", "zh-CN"},
-		{"", "ru-RU,en-US;q=0.8", "en"},
+		{"", "ru-RU,en-US;q=0.8", "ru"},
+		{"ru", "en", "ru"},
+		{"ru_RU", "en", "ru"},
+		{"", "ru;q=0,en;q=0.5", "en"},
 		{"", "zh-TW", "zh-CN"},
 		{"", "zh;q=0,en;q=0.5", "en"},
 		{"", "zh;q=invalid", "en"},
@@ -35,6 +39,10 @@ func TestResolveLocale(t *testing.T) {
 func TestTranslatePreservesArgumentsAndUnknownText(t *testing.T) {
 	for _, tc := range []struct{ locale, source, want string }{
 		{"zh-CN", "Scanning certificates due for renewal", "开始扫描待续期证书"},
+		{"ru", "Administrator login", "Вход администратора"},
+		{"ru", "invalid target log database: custom-value", "Недопустимая целевая база журналов: custom-value"},
+		{"en", "Вход администратора", "Administrator login"},
+		{"ru", "Unknown custom message", "Unknown custom message"},
 		{"en", "开始扫描待续期证书", "Scanning certificates due for renewal"},
 		{"en", "目标日志库不合法: 用户数据", "invalid target log database: 用户数据"},
 		{"zh-CN", "invalid target log database: 用户数据", "目标日志库不合法: 用户数据"},
@@ -71,6 +79,7 @@ func TestTranslateRecognizesHistoricalEnglishErrorCase(t *testing.T) {
 
 func TestCatalogParityAndFormats(t *testing.T) {
 	variables := regexp.MustCompile(`\{\{[^{}]+\}\}`)
+	payloadVariables := regexp.MustCompile(`\$[\pL_][\pL\pN_]*(?:\.[\pL_][\pL\pN_]*)*`)
 	english := builtIn.locales[DefaultLocale]
 	for locale, messages := range builtIn.locales {
 		if len(messages) != len(english) {
@@ -91,6 +100,13 @@ func TestCatalogParityAndFormats(t *testing.T) {
 			if !reflect.DeepEqual(sourceVariables, translatedVariables) {
 				t.Errorf("%s %s changes template variables", locale, id)
 			}
+			sourcePayload := payloadVariables.FindAllString(source, -1)
+			translatedPayload := payloadVariables.FindAllString(translated, -1)
+			sort.Strings(sourcePayload)
+			sort.Strings(translatedPayload)
+			if !reflect.DeepEqual(sourcePayload, translatedPayload) {
+				t.Errorf("%s %s changes payload variables", locale, id)
+			}
 		}
 	}
 }
@@ -101,5 +117,50 @@ func TestTranslateLegacyTaskLog(t *testing.T) {
 	want := "[System] Task enqueued; waiting for execution (queue: custom-中文, maximum retries: 3)"
 	if got != want {
 		t.Fatalf("got %q, want %q", got, want)
+	}
+}
+
+func TestNotificationPublicErrorsHaveTranslations(t *testing.T) {
+	for _, source := range []string{
+		"this notification event is already configured",
+		"cannot enable event without any push channels configured",
+		"custom template is not a valid JSON format",
+		"unsupported task type",
+		"channel name already exists",
+		"channel name is required",
+		"channel name can only contain letters, numbers, and underscores",
+		"request URL/address is required",
+		"request URL must use HTTPS protocol for security reasons",
+		"payload schema (request body) is required",
+		"payload schema must be a valid JSON format",
+		"telegram bot token is required",
+	} {
+		for _, locale := range []string{"ru", "zh-CN"} {
+			if got := Translate(locale, source); got == source || got == "" {
+				t.Errorf("Translate(%q, %q) = %q, want a localized public error", locale, source, got)
+			}
+		}
+	}
+}
+
+func TestValidationMessagesPreserveAcceptedSyntax(t *testing.T) {
+	contracts := map[string][]string{
+		"s_must_be_a_duration_with_a_unit_b97fceb4":                  {"30m", "5s"},
+		"match_mode_for_node_s_must_be_and_65944b17":                 {"and", "or"},
+		"pow_algorithm_for_node_s_must_be_fast_97989167":             {"fast", "slow"},
+		"s_must_be_true_or_false_3a8153ff":                           {"true", "false"},
+		"geolocation_provider_must_be_disabled_mmdb_ip_api_08bc0f62": {"disabled", "mmdb", "ip-api", "geojs", "ipinfo"},
+		"s_must_be_disabled_mmdb_ip_api_geojs_deba53da":              {"disabled", "mmdb", "ip-api", "geojs", "ipinfo"},
+		"image_quality_must_be_low_medium_or_high_3d699272":          {"low", "medium", "high"},
+		"webp_compression_quality_must_be_low_medium_or_866b5127":    {"low", "medium", "high"},
+	}
+	for locale, messages := range builtIn.locales {
+		for key, tokens := range contracts {
+			for _, token := range tokens {
+				if !strings.Contains(messages[key], token) {
+					t.Errorf("%s %s message %q is missing accepted syntax %q", locale, key, messages[key], token)
+				}
+			}
+		}
 	}
 }

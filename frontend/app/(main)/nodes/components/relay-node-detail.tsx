@@ -489,7 +489,7 @@ export function RelayNodeDetail({ node }: { node: NodeItem }) {
     <>
       <NodeDetailShell
         title={node.name}
-        typeLabel='Relay'
+        typeLabel={rt('node_type_relay')}
         typeTone='warning'
         statusBadges={[
           {

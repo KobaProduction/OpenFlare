@@ -553,6 +553,24 @@ func TestResolveTarget(t *testing.T) {
 
 	ctx := context.Background()
 
+	for index, username := range []string{"System", "Система"} {
+		t.Run("translated system label is an ordinary username/"+username, func(t *testing.T) {
+			user := model.User{
+				ID: uint64(20000 + index), Username: username,
+				Email: "ordinary_" + strconv.Itoa(index) + "@example.invalid",
+			}
+			if err := dbConn.Create(&user).Error; err != nil {
+				t.Fatalf("create user %q: %v", username, err)
+			}
+			for _, target := range []string{username, "user.username"} {
+				body := map[string]any{"user.username": username}
+				if got := resolveTarget(ctx, target, body, channelEmail); got != user.Email {
+					t.Errorf("resolveTarget(%q, username=%q, email) = %q, want %q", target, username, got, user.Email)
+				}
+			}
+		})
+	}
+
 	t.Run("dynamic user.id resolved and converted for email channel", func(t *testing.T) {
 		res := resolveTarget(ctx, "user.id", flatBody, "email")
 		assert.Equal(t, "target@test.com", res)

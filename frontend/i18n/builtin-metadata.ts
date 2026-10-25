@@ -1,15 +1,17 @@
 import english from '@/messages/fragments/builtin-metadata.en.json';
 import chinese from '@/messages/fragments/builtin-metadata.zh-CN.json';
+import russian from '@/messages/fragments/builtin-metadata.ru.json';
 
 function localizedDefault(
   value: string,
   en: string | undefined,
   zh: string | undefined,
+  ru: string | undefined,
   locale: string,
 ): string {
   // Only known defaults are translated. Custom and unknown text stays intact.
-  if (!en || !zh || (value !== en && value !== zh)) return value;
-  return locale === 'zh-CN' ? zh : en;
+  if (!en || !zh || !ru || ![en, zh, ru].includes(value)) return value;
+  return locale === 'zh-CN' ? zh : locale === 'ru' ? ru : en;
 }
 
 export function localizeConfigDescription(
@@ -25,7 +27,8 @@ export function localizeConfigDescription(
     string,
     string
   >;
-  return localizedDefault(value, en[key], zh[key], locale);
+  const ru = russian.builtinMetadata.configDescriptions as typeof en;
+  return localizedDefault(value, en[key], zh[key], ru[key], locale);
 }
 
 export function localizeTemplateMetadata(
@@ -41,5 +44,12 @@ export function localizeTemplateMetadata(
     { name: string; description: string }
   >;
   const zh = chinese.builtinMetadata.templates as typeof en;
-  return localizedDefault(value, en[key]?.[field], zh[key]?.[field], locale);
+  const ru = russian.builtinMetadata.templates as typeof en;
+  return localizedDefault(
+    value,
+    en[key]?.[field],
+    zh[key]?.[field],
+    ru[key]?.[field],
+    locale,
+  );
 }

@@ -689,7 +689,7 @@ export function SettingsTab() {
                           toast.success(t('loadedBarkTemplate'));
                         }}
                       >
-                        Bark App
+                        {rt('ui_barkApp')}
                       </Button>
                     </div>
                   </div>

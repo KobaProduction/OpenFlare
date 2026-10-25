@@ -262,7 +262,7 @@ X-Access-Token: at_628d022b7a95e26b...`}
           </p>
           <ul className='list-disc pl-4 md:pl-5 space-y-2'>
             <li>
-              <strong>OpenTelemetry Tracing:</strong>{' '}
+              <strong>{rt('ui_openTelemetryTracing')}</strong>{' '}
               {rt(
                 'tracing_context_is_propagated_automatically_gin_requests_0f549cce',
               )}

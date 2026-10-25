@@ -13,11 +13,13 @@ import { locales, type AppLocale } from '@/i18n/config';
 import { switchLocale } from '@/i18n/client';
 import { cn } from '@/lib/utils';
 import enNames from '@/messages/fragments/languages.en.json';
+import ruNames from '@/messages/fragments/languages.ru.json';
 import zhCNNames from '@/messages/fragments/languages.zh-CN.json';
 
 // Language names always use their own locale, regardless of the active UI.
 const nativeNames: Record<AppLocale, string> = {
   en: enNames.languageNames.en,
+  ru: ruNames.languageNames.ru,
   'zh-CN': zhCNNames.languageNames['zh-CN'],
 };
 

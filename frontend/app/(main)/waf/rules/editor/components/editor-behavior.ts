@@ -1,3 +1,4 @@
+import { locales } from '@/i18n/config';
 import type { EdgeChange, Node, NodeChange } from '@xyflow/react';
 import type { WAFRuleGraph, WAFRuleNode } from '@/lib/services/openflare';
 
@@ -140,7 +141,7 @@ function findMessageId(
   return [...ids]
     .sort((a, b) => b.length - a.length)
     .find((id) =>
-      (['en', 'zh-CN'] as const).some((locale) => {
+      locales.some((locale) => {
         const t = getRuntimeTranslator(locale);
         const token = `${escapeRegExp(t(tokenKey))}(?:\\s+ID)?`;
         const pattern = t

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import english from '@/messages/fragments/builtin-metadata.en.json';
 import chinese from '@/messages/fragments/builtin-metadata.zh-CN.json';
+import russian from '@/messages/fragments/builtin-metadata.ru.json';
 import {
   localizeConfigDescription,
   localizeTemplateMetadata,
@@ -23,6 +24,16 @@ describe('built-in metadata presentation', () => {
       chinese.builtinMetadata.configDescriptions.site_name,
     );
     expect(original.value).toBe('My site');
+    expect(
+      localizeConfigDescription(original.key, original.description, 'ru'),
+    ).toBe(russian.builtinMetadata.configDescriptions.site_name);
+    expect(
+      localizeConfigDescription(
+        original.key,
+        russian.builtinMetadata.configDescriptions.site_name,
+        'en',
+      ),
+    ).toBe(english.builtinMetadata.configDescriptions.site_name);
   });
 
   it('preserves custom descriptions, edited values and unknown configuration keys', () => {

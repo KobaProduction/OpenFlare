@@ -34,7 +34,7 @@ export default function NotFound() {
           </h1>
           <div className='absolute inset-0 flex items-center justify-center'>
             <span className='text-2xl font-medium tracking-[0.2em] text-foreground/80 uppercase'>
-              Page Not Found
+              {rt('ui_pageNotFound')}
             </span>
           </div>
         </motion.div>

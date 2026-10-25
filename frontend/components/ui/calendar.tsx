@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useLocale } from 'next-intl';
-import { enUS, zhCN } from 'date-fns/locale';
+import { enUS, ru, zhCN } from 'react-day-picker/locale';
 import {
   ChevronDownIcon,
   ChevronLeftIcon,
@@ -27,7 +27,9 @@ function Calendar({
   buttonVariant?: React.ComponentProps<typeof Button>['variant'];
 }) {
   const uiLocale = useLocale();
-  const locale = localeOverride ?? (uiLocale === 'zh-CN' ? zhCN : enUS);
+  const locale =
+    localeOverride ??
+    (uiLocale === 'zh-CN' ? zhCN : uiLocale === 'ru' ? ru : enUS);
   const defaultClassNames = getDefaultClassNames();
 
   return (

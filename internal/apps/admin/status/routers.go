@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Rain-kl/Wavelet/internal/infra/config"
@@ -118,20 +119,20 @@ func formatDuration(d time.Duration) string {
 	minutes := int(d.Minutes()) % minutesInHour
 	seconds := int(d.Seconds()) % secondsInMinute
 
-	var res string
-	if days > 0 {
-		res += fmt.Sprintf("%d days", days)
+	var parts []string
+	for _, part := range []struct {
+		value int
+		unit  string
+	}{{days, "day"}, {hours, "hour"}, {minutes, "minute"}, {seconds, "second"}} {
+		if part.value > 0 || (part.unit == "second" && len(parts) == 0) {
+			unit := part.unit
+			if part.value != 1 {
+				unit += "s"
+			}
+			parts = append(parts, fmt.Sprintf("%d %s", part.value, unit))
+		}
 	}
-	if hours > 0 {
-		res += fmt.Sprintf("%d hours", hours)
-	}
-	if minutes > 0 {
-		res += fmt.Sprintf("%d minutes", minutes)
-	}
-	if seconds > 0 || res == "" {
-		res += fmt.Sprintf("%d seconds", seconds)
-	}
-	return res
+	return strings.Join(parts, " ")
 }
 
 // GetSystemStatus 获取系统状态信息

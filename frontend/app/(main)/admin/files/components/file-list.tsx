@@ -83,6 +83,8 @@ function formatDate(dateStr: string) {
 }
 
 export function FileList() {
+  const uiText = useTranslations('runtime');
+
   const t = useTranslations('admin.files');
   const queryClient = useQueryClient();
   const [keyword, setKeyword] = React.useState('');
@@ -565,7 +567,7 @@ export function FileList() {
 
                 <div className='grid grid-cols-3 gap-2 border-b border-dashed pb-2'>
                   <span className='text-muted-foreground font-medium'>
-                    Hash (SHA-256)
+                    {uiText('ui_fileHash')}
                   </span>
                   <span className='col-span-2 font-mono break-all select-all text-foreground/90'>
                     {detailTarget.hash}

@@ -124,7 +124,7 @@ export function AuthSourceModal({
             />
           </div>
           <div className='space-y-2'>
-            <Label>Client ID</Label>
+            <Label>{rt('ui_clientId')}</Label>
             <Input
               value={form.client_id}
               onChange={(e) =>
@@ -133,7 +133,7 @@ export function AuthSourceModal({
             />
           </div>
           <div className='space-y-2'>
-            <Label>Client Secret</Label>
+            <Label>{rt('ui_clientSecret')}</Label>
             <Input
               value={form.client_secret}
               onChange={(e) =>
@@ -156,7 +156,7 @@ export function AuthSourceModal({
             />
           </div>
           <div className='space-y-2'>
-            <Label>Scopes</Label>
+            <Label>{rt('ui_scopes')}</Label>
             <Input
               value={form.scopes}
               onChange={(e) =>

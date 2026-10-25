@@ -8,6 +8,7 @@ import { isLogStorageDisabledMessage } from '@/app/(main)/admin/logs/components/
 import { searchItems } from '@/lib/utils/search-data';
 import english from '@/messages/en.json';
 import chinese from '@/messages/zh-CN.json';
+import { locales } from './config';
 import { getRuntimeTranslator } from './runtime';
 
 afterEach(() => {
@@ -78,6 +79,7 @@ describe('imperative runtime translations', () => {
     }
     for (const message of [
       'Edge edge-1 has invalid source',
+      'Ребро edge-1 ссылается на отсутствующий исходный узел other',
       '边 ID edge-1 的端点无效',
     ]) {
       expect(findGraphErrorTarget(new Error(message), [], ['edge-1'])).toEqual({
@@ -108,17 +110,17 @@ describe('imperative runtime translations', () => {
     ).toBe(true);
   });
 
-  it('formats interpolated messages in both catalogs', () => {
-    for (const locale of ['en', 'zh-CN'] as const) {
+  it('formats interpolated messages in all catalogs', () => {
+    for (const locale of locales) {
       const t = getRuntimeTranslator(locale);
       for (const [key, text] of Object.entries(english.runtime)) {
-        if (/\{value\d+\}/.test(text)) {
+        if (/\{value\d+(?:\}|,)/.test(text)) {
           const translated = t(key as keyof typeof english.runtime, {
-            value0: 'CUSTOM',
+            value0: 42,
             value1: 'VALUE',
             value2: 42,
           });
-          expect(translated).toContain('CUSTOM');
+          expect(translated).toContain('42');
           expect(translated).not.toContain('{value0}');
         }
       }

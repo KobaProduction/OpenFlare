@@ -117,7 +117,7 @@ export const FooterSection = React.memo(function FooterSection({
         </div>
 
         <div className='pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground'>
-          <p>© 2026 Modern Platform. All rights reserved.</p>
+          <p>{rt('ui_copyright')}</p>
           <div className='flex gap-8'>
             <Link
               href='/docs/privacy-policy'

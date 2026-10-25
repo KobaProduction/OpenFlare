@@ -347,7 +347,7 @@ export function createApiSections(rt: RuntimeTranslator): PolicySection[] {
             </code>
           </p>
           <p>
-            <strong>{rt('parameters_ba89685c')}</strong> JSON Body{' '}
+            <strong>{rt('parameters_ba89685c')}</strong> {rt('ui_jsonBody')}{' '}
             <code className='bg-muted px-1.5 rounded text-xs font-mono'>
               {rt.raw('name_token_name_is_admin_false_4f3e4868')}
             </code>

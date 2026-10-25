@@ -1,3 +1,4 @@
+import { locales } from '@/i18n/config';
 import { getRuntimeTranslator, runtimeText } from '@/i18n/runtime';
 /**
  * API 错误类型定义
@@ -126,7 +127,7 @@ export function isCancelError(error: unknown): boolean {
     (('__CANCEL__' in error &&
       (error as { __CANCEL__?: boolean }).__CANCEL__ === true) ||
       ('message' in error &&
-        (['en', 'zh-CN'] as const).some(
+        locales.some(
           (locale) =>
             (error as { message?: string }).message ===
             getRuntimeTranslator(locale)('request_canceled_5892f9b1'),

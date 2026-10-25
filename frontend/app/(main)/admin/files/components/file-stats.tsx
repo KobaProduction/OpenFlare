@@ -223,7 +223,7 @@ export function FileStats() {
             <div className='text-2xl font-bold font-mono text-sky-500'>
               {stats.total_count.toLocaleString()}{' '}
               <span className='text-xs font-normal text-muted-foreground'>
-                {t('stats.countUnit')}
+                {t.raw('stats.countUnit')}
               </span>
             </div>
             <p className='text-[10px] text-muted-foreground mt-1'>
@@ -260,7 +260,7 @@ export function FileStats() {
             <div className='text-2xl font-bold font-mono text-indigo-500'>
               +{trendSummary.count.toLocaleString()}{' '}
               <span className='text-xs font-normal text-muted-foreground'>
-                {t('stats.countUnit')}
+                {t.raw('stats.countUnit')}
               </span>
             </div>
             <p className='text-[10px] text-muted-foreground mt-1'>
@@ -384,7 +384,7 @@ export function FileStats() {
                         const formattedValue =
                           trendMetric === 'size'
                             ? formatFileSize(Number(value))
-                            : `${value} ${t('stats.countUnit')}`;
+                            : `${value} ${t.raw('stats.countUnit')}`;
                         return (
                           <>
                             <div className='flex items-center gap-1.5'>
@@ -494,7 +494,7 @@ export function FileStats() {
                                   </span>
                                 </div>
                                 <span className='text-foreground font-mono font-medium tabular-nums ml-auto'>
-                                  {value} {t('stats.countUnit')}
+                                  {value} {t.raw('stats.countUnit')}
                                 </span>
                               </>
                             );

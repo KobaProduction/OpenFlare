@@ -1,13 +1,11 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { createTranslator } from 'next-intl';
-import messages from '@/messages/fragments/runtime.en.json';
-
-const translate = createTranslator({
-  locale: 'en',
-  messages,
-  namespace: 'runtime',
-});
+import {
+  localeCookieName,
+  normalizeLocale,
+  pickLocaleFromAcceptLanguage,
+} from '@/i18n/config';
+import { getRuntimeTranslator } from '@/i18n/runtime-translators';
 
 /**
  * Next.js 16 代理层
@@ -102,6 +100,13 @@ export function proxy(request: NextRequest) {
 
       const [allowed, waitTime] = checkRateLimit(identifier, pathname);
       if (!allowed) {
+        const cookieLocale = request.cookies.get(localeCookieName)?.value;
+        const locale = cookieLocale
+          ? normalizeLocale(cookieLocale)
+          : pickLocaleFromAcceptLanguage(
+              request.headers.get('accept-language'),
+            );
+        const translate = getRuntimeTranslator(locale);
         return NextResponse.json(
           {
             error_code: 'RATE_LIMITED',

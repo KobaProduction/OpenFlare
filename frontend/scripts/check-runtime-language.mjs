@@ -6,7 +6,8 @@ import ts from 'typescript';
 const root = process.argv[2]
   ? resolve(process.argv[2])
   : resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const han = /\p{Script=Han}/u;
+const translatedScript =
+  /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}\p{Script=Cyrillic}]/u;
 const failures = [];
 // These six identifiers are persisted upload counter keys. Renaming them is a
 // data migration, not a translation. The UI translates their labels separately.
@@ -24,9 +25,11 @@ const compatibilityFiles = new Set([
 ]);
 
 function report(file, source, offset, text) {
-  if (!han.test(text)) return;
+  if (!translatedScript.test(text)) return;
   const name = relative(root, file).replaceAll('\\', '/');
   if (compatibilityFiles.has(name) && legacyCategoryKeys.has(text)) return;
+  // Historical persisted notification recipient alias, not display text.
+  if (name === 'internal/apps/admin/push/logics.go' && text === '系统') return;
   const line = source.slice(0, offset).split('\n').length;
   failures.push(`${name}:${line}`);
 }
@@ -165,7 +168,7 @@ for (const file of ['frontend/proxy.ts', 'frontend/next.config.ts'])
   inspect(resolve(root, file));
 if (failures.length) {
   console.error(
-    'Chinese runtime text must be moved into a locale catalog:\n' +
+    'Non-English runtime text must be moved into a locale catalog:\n' +
       failures.join('\n'),
   );
   process.exitCode = 1;
