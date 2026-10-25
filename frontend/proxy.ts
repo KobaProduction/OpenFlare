@@ -1,5 +1,13 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { createTranslator } from 'next-intl';
+import messages from '@/messages/fragments/runtime.en.json';
+
+const translate = createTranslator({
+  locale: 'en',
+  messages,
+  namespace: 'runtime',
+});
 
 /**
  * Next.js 16 代理层
@@ -97,7 +105,10 @@ export function proxy(request: NextRequest) {
         return NextResponse.json(
           {
             error_code: 'RATE_LIMITED',
-            error_msg: `请求过于频繁，请 ${waitTime} 秒后重试`,
+            error_msg: translate(
+              'too_many_requests_retry_in_value0_seconds_ab5e78f1',
+              { value0: waitTime },
+            ),
           },
           { status: 429, headers: { 'Retry-After': String(waitTime) } },
         );

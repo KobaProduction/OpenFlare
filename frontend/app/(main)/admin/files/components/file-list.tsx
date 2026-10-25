@@ -1,5 +1,6 @@
 'use client';
 
+import { getFormattingLocale } from '@/i18n/format';
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -72,7 +73,7 @@ function getFileIcon(mimeType: string, className = 'size-8') {
 }
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleString('zh-CN', {
+  return new Date(dateStr).toLocaleString(getFormattingLocale(), {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',

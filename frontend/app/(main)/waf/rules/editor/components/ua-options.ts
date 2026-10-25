@@ -1,3 +1,4 @@
+import { runtimeText } from '@/i18n/runtime';
 export const UA_BROWSER_OPTIONS = [
   { value: 'Chrome', label: 'Chrome' },
   { value: 'Safari', label: 'Safari' },
@@ -5,7 +6,12 @@ export const UA_BROWSER_OPTIONS = [
   { value: 'Edge', label: 'Edge' },
   { value: 'Opera', label: 'Opera' },
   { value: 'Chromium', label: 'Chromium' },
-  { value: 'WeChat', label: '微信' },
+  {
+    value: 'WeChat',
+    get label() {
+      return runtimeText('wechat_81b430b6');
+    },
+  },
   { value: 'Postman', label: 'Postman' },
   { value: 'CLI', label: 'CLI' },
   { value: 'Bot', label: 'Bot' },

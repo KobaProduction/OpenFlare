@@ -312,7 +312,7 @@ func TestPushHandler(t *testing.T) {
 	t.Run("execute task successfully", func(t *testing.T) {
 		res, execErr := handler.Execute(context.Background(), payloadBytes)
 		require.NoError(t, execErr)
-		assert.Contains(t, res.Message, "推送成功")
+		assert.Contains(t, res.Message, "Notification sent")
 
 		// Verify mock pusher received flattened variables
 		mPusher.mu.Lock()

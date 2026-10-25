@@ -1,3 +1,4 @@
+import { getFormattingLocale } from '@/i18n/format';
 import type {
   ApplyResult,
   NodeItem,
@@ -255,7 +256,7 @@ export function formatMetricCount(value?: number | null) {
   if (value === undefined || value === null || !Number.isFinite(value)) {
     return '—';
   }
-  return value.toLocaleString('zh-CN');
+  return value.toLocaleString(getFormattingLocale());
 }
 
 export function formatBytesPerSecond(value?: number | null, windowSeconds = 1) {

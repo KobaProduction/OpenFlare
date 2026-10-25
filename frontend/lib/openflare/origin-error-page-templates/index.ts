@@ -1,3 +1,4 @@
+import { runtimeText } from '@/i18n/runtime';
 /**
  * 内置源站错误页 HTML 模板目录。
  * 每个模板对应本目录下一个独立 `.ts` 模块（export default 完整 HTML 字符串）。
@@ -21,17 +22,23 @@ export type OriginErrorPageTemplate = {
 export const ORIGIN_ERROR_PAGE_TEMPLATES: OriginErrorPageTemplate[] = [
   {
     id: 'minimalist',
-    name: '极简白底',
+    get name() {
+      return runtimeText('minimal_white_5636e8a9');
+    },
     html: minimalistHtml,
   },
   {
     id: 'line-style',
-    name: '线框拓扑',
+    get name() {
+      return runtimeText('line_topology_22ad450c');
+    },
     html: lineStyleHtml,
   },
   {
     id: 'baohaus',
-    name: '包豪斯',
+    get name() {
+      return runtimeText('bauhaus_5cc69781');
+    },
     html: baohausHtml,
   },
 ];

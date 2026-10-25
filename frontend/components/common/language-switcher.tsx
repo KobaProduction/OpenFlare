@@ -9,9 +9,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { localeLabels, locales, type AppLocale } from '@/i18n/config';
+import { locales, type AppLocale } from '@/i18n/config';
 import { switchLocale } from '@/i18n/client';
 import { cn } from '@/lib/utils';
+import enNames from '@/messages/fragments/languages.en.json';
+import zhCNNames from '@/messages/fragments/languages.zh-CN.json';
+
+// Language names always use their own locale, regardless of the active UI.
+const nativeNames: Record<AppLocale, string> = {
+  en: enNames.languageNames.en,
+  'zh-CN': zhCNNames.languageNames['zh-CN'],
+};
 
 type LanguageSwitcherProps = {
   variant?: 'icon' | 'full';
@@ -38,7 +46,7 @@ export function LanguageSwitcher({
               if (item !== locale) switchLocale(item);
             }}
           >
-            {localeLabels[item]}
+            {nativeNames[item]}
           </Button>
         ))}
       </div>
@@ -55,7 +63,7 @@ export function LanguageSwitcher({
             'size-9 text-muted-foreground hover:text-foreground',
             className,
           )}
-          aria-label={localeLabels[locale]}
+          aria-label={nativeNames[locale]}
         >
           <Languages className='size-[18px]' />
         </Button>
@@ -69,7 +77,7 @@ export function LanguageSwitcher({
             }}
             className={item === locale ? 'bg-accent' : undefined}
           >
-            {localeLabels[item]}
+            {nativeNames[item]}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

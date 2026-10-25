@@ -1,5 +1,13 @@
 import type { AppLocale } from './config';
-import { defaultLocale } from './config';
+import { defaultLocale, normalizeLocale } from './config';
+
+// Match the language currently rendered by the provider, including the initial
+// static-export render. This module also remains safe in server contexts.
+export function getFormattingLocale(): AppLocale {
+  return typeof document === 'undefined'
+    ? defaultLocale
+    : normalizeLocale(document.documentElement.lang);
+}
 
 const localeToIntl: Record<AppLocale, string> = {
   'zh-CN': 'zh-CN',
@@ -8,7 +16,7 @@ const localeToIntl: Record<AppLocale, string> = {
 
 export function formatDateTime(
   dateStr: string | Date,
-  locale: AppLocale = defaultLocale,
+  locale: AppLocale = getFormattingLocale(),
   timeZone = 'Asia/Shanghai',
 ): string {
   try {
@@ -29,7 +37,7 @@ export function formatDateTime(
 
 export function formatNumber(
   value: number,
-  locale: AppLocale = defaultLocale,
+  locale: AppLocale = getFormattingLocale(),
 ): string {
   try {
     return new Intl.NumberFormat(localeToIntl[locale] ?? locale).format(value);

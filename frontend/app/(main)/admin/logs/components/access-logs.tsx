@@ -17,6 +17,7 @@ limitations under the License.
 'use client';
 
 import { useMemo, useState } from 'react';
+import { isLogStorageDisabledMessage } from './log-storage-error';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -94,7 +95,7 @@ function statusVariant(status: number) {
 
 function isClickhouseDisabledError(error: Error) {
   const errMsg = error.message || '';
-  return errMsg.includes('ClickHouse') || errMsg.includes('未启用');
+  return isLogStorageDisabledMessage(errMsg);
 }
 
 export function AccessLogs() {

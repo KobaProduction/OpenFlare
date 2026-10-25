@@ -50,6 +50,12 @@ const categoryMap: Record<string, string> = {
   其他: 'others',
 };
 
+// The API retains persisted category keys; labels always follow the UI locale.
+function categoryTranslationKey(name: string) {
+  const key = categoryMap[name] || 'others';
+  return `stats.cat${key.charAt(0).toUpperCase()}${key.slice(1)}`;
+}
+
 function useStatsChartConfig() {
   const t = useTranslations('admin.files');
   return {
@@ -158,11 +164,11 @@ export function FileStats() {
     stats.categories.forEach((cat) => {
       if (cat.count > maxCount) {
         maxCount = cat.count;
-        maxCountName = cat.name;
+        maxCountName = t(categoryTranslationKey(cat.name));
       }
       if (cat.size > maxSize) {
         maxSize = cat.size;
-        maxSizeName = cat.name;
+        maxSizeName = t(categoryTranslationKey(cat.name));
       }
     });
 

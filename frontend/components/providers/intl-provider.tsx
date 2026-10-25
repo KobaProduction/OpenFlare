@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import type { AbstractIntlMessages } from 'next-intl';
 import type { ReactNode } from 'react';
@@ -25,20 +25,17 @@ export function AppIntlProvider({
   messages: ssrMessages,
   children,
 }: Props) {
-  // Static export (NEXT_STANDALONE_EXPORT) pre-renders every page at build time
-  // with the default locale, so the SSR locale is stale at runtime. Re-resolve
-  // from the NEXT_LOCALE cookie / browser language on the client. The first
-  // render stays identical to SSR to avoid a hydration mismatch, then flips —
-  // the brief flash matches the theme-hydration pattern (suppressHydrationWarning
-  // is already set on <html>/<body>).
+  // Static exports start in the default English locale. Keep hydration aligned
+  // with that HTML, then apply an explicit preference before the hydrated UI
+  // paints instead of switching languages in a passive effect after paint.
   const [clientLocale, setClientLocale] = useState<AppLocale | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const resolved = resolveClientLocale();
     if (resolved !== ssrLocale) {
       setClientLocale(resolved);
-      document.documentElement.lang = resolved;
     }
+    document.documentElement.lang = resolved;
   }, [ssrLocale]);
 
   const locale = clientLocale ?? ssrLocale;

@@ -120,16 +120,16 @@ func formatDuration(d time.Duration) string {
 
 	var res string
 	if days > 0 {
-		res += fmt.Sprintf("%d天", days)
+		res += fmt.Sprintf("%d days", days)
 	}
 	if hours > 0 {
-		res += fmt.Sprintf("%d小时", hours)
+		res += fmt.Sprintf("%d hours", hours)
 	}
 	if minutes > 0 {
-		res += fmt.Sprintf("%d分钟", minutes)
+		res += fmt.Sprintf("%d minutes", minutes)
 	}
 	if seconds > 0 || res == "" {
-		res += fmt.Sprintf("%d秒钟", seconds)
+		res += fmt.Sprintf("%d seconds", seconds)
 	}
 	return res
 }
@@ -156,9 +156,9 @@ func GetSystemStatus(c *gin.Context) {
 	case m.LastGC > 0 && m.LastGC <= math.MaxInt64:
 		lastGCTime = formatDuration(time.Since(time.Unix(0, int64(m.LastGC))))
 	case m.LastGC > 0:
-		lastGCTime = "未知"
+		lastGCTime = "Unknown"
 	default:
-		lastGCTime = "无"
+		lastGCTime = "None"
 	}
 
 	var lastPause string
@@ -292,7 +292,7 @@ func exportSQLite(c *gin.Context) {
 	dir, err := os.MkdirTemp("", "openflare-db-export-*")
 	if err != nil {
 		logger.ErrorF(c.Request.Context(), "[db-export] create temporary directory failed: %v", err)
-		response.AbortInternal(c, "无法创建数据库导出文件")
+		response.AbortInternal(c, "Unable to create database export file")
 		return
 	}
 	defer func() {
@@ -303,13 +303,13 @@ func exportSQLite(c *gin.Context) {
 	path := filepath.Join(dir, "openflare.db")
 	if err := repository.ExportSQLiteSnapshot(c.Request.Context(), path); err != nil {
 		logger.ErrorF(c.Request.Context(), "[db-export] create SQLite snapshot failed: %v", err)
-		response.AbortInternal(c, "无法导出数据库")
+		response.AbortInternal(c, "Unable to export database")
 		return
 	}
 
 	f, err := os.Open(path) //nolint:gosec // path is generated in a private temporary directory, not from user input
 	if err != nil {
-		response.AbortInternal(c, "无法打开数据库文件: "+err.Error())
+		response.AbortInternal(c, "Unable to open database file: "+err.Error())
 		return
 	}
 	defer func() {
@@ -320,7 +320,7 @@ func exportSQLite(c *gin.Context) {
 
 	fi, err := f.Stat()
 	if err != nil {
-		response.AbortInternal(c, "无法读取数据库文件信息: "+err.Error())
+		response.AbortInternal(c, "Unable to read database file information: "+err.Error())
 		return
 	}
 
@@ -338,7 +338,7 @@ func exportPostgres(c *gin.Context) {
 	// 检查 pg_dump 是否可用
 	pgDumpPath, err := exec.LookPath("pg_dump")
 	if err != nil {
-		response.AbortInternal(c, "pg_dump 不可用，请确保服务器已安装 PostgreSQL 客户端工具")
+		response.AbortInternal(c, "pg_dump is unavailable; install the PostgreSQL client tools on the server")
 		return
 	}
 
