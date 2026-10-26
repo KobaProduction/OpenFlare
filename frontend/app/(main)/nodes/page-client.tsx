@@ -71,6 +71,7 @@ function NodesPage({ nodeFilter }: { nodeFilter: NodeFilter }) {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [status, setStatus] = useState<NodeStatus | ''>('');
+  const searchTooLong = new TextEncoder().encode(search.trim()).length > 256;
 
   const resetNodeActions = useCallback(() => {
     setEditingNode(null);
@@ -79,14 +80,14 @@ function NodesPage({ nodeFilter }: { nodeFilter: NodeFilter }) {
   }, []);
 
   useEffect(() => {
-    if (search.trim() === debouncedSearch) return;
+    if (searchTooLong || search.trim() === debouncedSearch) return;
     const timeout = setTimeout(() => {
       setDebouncedSearch(search.trim());
       setPage(1);
       resetNodeActions();
     }, 300);
     return () => clearTimeout(timeout);
-  }, [search, debouncedSearch, resetNodeActions]);
+  }, [search, searchTooLong, debouncedSearch, resetNodeActions]);
 
   const nodeTypes: Record<NodeFilter, NodeType | ''> = {
     all: '',
@@ -236,6 +237,7 @@ function NodesPage({ nodeFilter }: { nodeFilter: NodeFilter }) {
           <NodeTypeFilter />
           <NodeListControls
             search={search}
+            searchTooLong={searchTooLong}
             onSearchChange={setSearch}
             status={status}
             onStatusChange={(value) => {

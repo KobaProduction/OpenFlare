@@ -179,6 +179,38 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 
+it('validates the UTF-8 search limit before requesting and recovers after shortening', async () => {
+  renderPage();
+  await screen.findByText('Edge 1');
+  const input = screen.getByLabelText('Search nodes');
+  for (const search of ['a'.repeat(256), '汉'.repeat(85) + 'a']) {
+    fireEvent.change(input, { target: { value: search } });
+    await waitFor(() =>
+      expect(NodeService.listNodePage).toHaveBeenLastCalledWith(
+        expect.objectContaining({ search }),
+      ),
+    );
+  }
+  const calls = vi.mocked(NodeService.listNodePage).mock.calls.length;
+  fireEvent.change(input, { target: { value: '汉'.repeat(86) } });
+  expect(input).toHaveAttribute('aria-invalid', 'true');
+  expect(screen.getByRole('alert')).toHaveTextContent(
+    'Search text is too long',
+  );
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 350));
+  });
+  expect(NodeService.listNodePage).toHaveBeenCalledTimes(calls);
+  fireEvent.change(input, { target: { value: 'short' } });
+  await waitFor(() =>
+    expect(NodeService.listNodePage).toHaveBeenLastCalledWith(
+      expect.objectContaining({ search: 'short' }),
+    ),
+  );
+  expect(input).not.toHaveAttribute('aria-invalid');
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+});
+
 it('retains the loaded page and total during navigation without leaving stale node actions', async () => {
   const pending =
     deferred<Awaited<ReturnType<typeof NodeService.listNodePage>>>();

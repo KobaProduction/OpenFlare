@@ -1,7 +1,12 @@
 import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
-import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -15,6 +20,7 @@ import type { NodeStatus } from '@/lib/services/openflare';
 
 export function NodeListControls({
   search,
+  searchTooLong,
   onSearchChange,
   status,
   onStatusChange,
@@ -28,6 +34,7 @@ export function NodeListControls({
   onPageChange,
 }: {
   search: string;
+  searchTooLong: boolean;
   onSearchChange: (value: string) => void;
   status: NodeStatus | '';
   onStatusChange: (value: NodeStatus | '') => void;
@@ -44,7 +51,7 @@ export function NodeListControls({
   return (
     <div className='flex flex-col gap-4'>
       <FieldGroup className='flex flex-wrap gap-3 sm:flex-row'>
-        <Field className='flex-1'>
+        <Field className='flex-1' data-invalid={searchTooLong || undefined}>
           <FieldLabel htmlFor='node-search'>
             {t('pagination.search')}
           </FieldLabel>
@@ -53,8 +60,15 @@ export function NodeListControls({
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder={t('pagination.searchPlaceholder')}
-            maxLength={128}
+            maxLength={256}
+            aria-invalid={searchTooLong || undefined}
+            aria-describedby={searchTooLong ? 'node-search-error' : undefined}
           />
+          {searchTooLong && (
+            <FieldError id='node-search-error'>
+              {t('pagination.searchTooLong')}
+            </FieldError>
+          )}
         </Field>
         <Field className='sm:w-44'>
           <FieldLabel htmlFor='node-status'>{t('table.status')}</FieldLabel>
