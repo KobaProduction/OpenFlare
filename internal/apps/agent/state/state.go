@@ -10,12 +10,15 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/Rain-kl/Wavelet/internal/apps/agent/localfile"
 )
 
 const (
-	stateDirPerm      = 0o750
-	stateFilePerm     = 0o600
-	nodeIDRandomBytes = 8
+	stateDirPerm         = 0o750
+	stateFilePerm        = 0o600
+	nodeIDRandomBytes    = 8
+	registrationKeyBytes = 32
 )
 
 // PagesDeployment records a Pages project tracked by the agent and the last
@@ -31,6 +34,7 @@ type PagesDeployment struct {
 // Snapshot represents the state of the agent at a given point in time.
 type Snapshot struct {
 	NodeID                 string            `json:"node_id"`
+	RegistrationKey        string            `json:"registration_key,omitempty"`
 	CurrentVersion         string            `json:"current_version"`
 	CurrentChecksum        string            `json:"current_checksum"`
 	PagesDeployments       []PagesDeployment `json:"pages_deployments"`
@@ -45,6 +49,28 @@ type Snapshot struct {
 	LastCPUStatIdle        uint64            `json:"last_cpu_stat_idle"`
 	LastMetricAtUnix       int64             `json:"last_metric_at_unix"`
 	AccessLogOffset        int64             `json:"access_log_offset"`
+}
+
+// EnsureRegistrationKey persists the private retry credential before enrollment can reach the server.
+func (s *Store) EnsureRegistrationKey() (string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	snapshot, err := s.loadUnlocked()
+	if err != nil {
+		return "", err
+	}
+	if snapshot.RegistrationKey != "" {
+		return snapshot.RegistrationKey, nil
+	}
+	key := make([]byte, registrationKeyBytes)
+	if _, err = rand.Read(key); err != nil {
+		return "", err
+	}
+	snapshot.RegistrationKey = hex.EncodeToString(key)
+	if err = s.saveUnlocked(snapshot); err != nil {
+		return "", err
+	}
+	return snapshot.RegistrationKey, nil
 }
 
 // Store manages the storage and retrieval of the agent state snapshot.
@@ -91,6 +117,28 @@ func (s *Store) EnsureNodeID() (string, error) {
 func (s *Store) Save(snapshot *Snapshot) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	current, err := s.loadUnlocked()
+	if err != nil {
+		return err
+	}
+	updated := *snapshot
+	// Other workers can hold a snapshot loaded before enrollment first persisted its key.
+	if current.RegistrationKey != "" {
+		updated.RegistrationKey = current.RegistrationKey
+		updated.NodeID = current.NodeID
+	}
+	return s.saveUnlocked(&updated)
+}
+
+// SetRegisteredNodeID commits the server-assigned identity without overwriting concurrent runtime state.
+func (s *Store) SetRegisteredNodeID(nodeID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	snapshot, err := s.loadUnlocked()
+	if err != nil {
+		return err
+	}
+	snapshot.NodeID = nodeID
 	return s.saveUnlocked(snapshot)
 }
 
@@ -120,7 +168,7 @@ func (s *Store) saveUnlocked(snapshot *Snapshot) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(s.path, data, stateFilePerm)
+	return localfile.WriteAtomic(s.path, data, stateFilePerm)
 }
 
 func newNodeID() (string, error) {
