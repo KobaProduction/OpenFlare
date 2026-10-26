@@ -123,6 +123,7 @@
     "pagination": {
       "search": "Поиск узлов",
       "searchPlaceholder": "Имя, идентификатор узла или IP",
+      "searchTooLong": "Поисковый запрос слишком длинный. Сократите его.",
       "allStatuses": "Все статусы",
       "pageSize": "На странице",
       "summary": "Страница {page} из {totalPages} · {total, plural, one {# узел} few {# узла} many {# узлов} other {# узла}}",

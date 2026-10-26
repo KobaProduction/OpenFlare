@@ -5,12 +5,18 @@
 package localfile
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 )
 
-// WriteAtomic replaces path only after its complete contents have been synced.
+// WriteAtomic syncs the complete contents, replaces path, then syncs its containing directory.
+// An error from the final sync means the replacement is visible but its durability is unconfirmed.
 func WriteAtomic(path string, data []byte, perm os.FileMode) error {
+	return writeAtomic(path, data, perm, SyncDirectory)
+}
+
+func writeAtomic(path string, data []byte, perm os.FileMode, syncDir func(string) error) error {
 	file, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".tmp-*")
 	if err != nil {
 		return err
@@ -31,5 +37,30 @@ func WriteAtomic(path string, data []byte, perm os.FileMode) error {
 	if err = file.Close(); err != nil {
 		return err
 	}
-	return os.Rename(file.Name(), path)
+	if err = os.Rename(file.Name(), path); err != nil {
+		return err
+	}
+	return syncDir(filepath.Dir(path))
+}
+
+// SyncDirectory confirms a directory entry update on platforms with directory flushing.
+// Windows provides best-effort replacement without a portable directory flush guarantee.
+func SyncDirectory(path string) (resultErr error) {
+	directory, err := os.Open(path) //nolint:gosec // callers provide the directory of a managed local state/config file
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if closeErr := directory.Close(); resultErr == nil {
+			resultErr = closeErr
+		}
+	}()
+	info, err := directory.Stat()
+	if err != nil {
+		return err
+	}
+	if !info.IsDir() {
+		return errors.New("cannot sync a non-directory path")
+	}
+	return syncDirectory(directory)
 }

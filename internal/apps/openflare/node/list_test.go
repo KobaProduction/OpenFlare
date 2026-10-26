@@ -184,6 +184,40 @@ func TestNodePageFiltersUseComputedStatus(t *testing.T) {
 	}
 }
 
+func TestNodePageUnicodeLiteralSearch(t *testing.T) {
+	conn := setupNodePageDB(t, 0)
+	nodes := []model.OpenFlareNode{
+		{NodeID: "unicode-latin", Name: "Étage 100%_!", NodeType: "edge_node"},
+		{NodeID: "unicode-cyrillic", Name: "Москва 100%_!", NodeType: "edge_node"},
+		{NodeID: "unicode-decoy", Name: "Étage 100xx!", NodeType: "edge_node"},
+	}
+	if err := conn.Create(&nodes).Error; err != nil {
+		t.Fatal(err)
+	}
+	cases := []struct {
+		search string
+		wantID string
+	}{
+		{search: "Étage 100%_!", wantID: "unicode-latin"},
+		{search: "ÉTAGE 100%_!", wantID: "unicode-latin"},
+		{search: "Москва 100%_!", wantID: "unicode-cyrillic"},
+		{search: "unicode-CYRILLIC", wantID: "unicode-cyrillic"},
+	}
+	for _, test := range cases {
+		page, err := ListPage(context.Background(), ListQuery{Search: test.search})
+		if err != nil {
+			t.Fatalf("ListPage(search=%q) error=%v", test.search, err)
+		}
+		if page.Total != 1 || len(page.Results) != 1 {
+			t.Errorf("ListPage(search=%q) total=%d,len=%d,wantone", test.search, page.Total, len(page.Results))
+			continue
+		}
+		if page.Results[0].NodeID != test.wantID {
+			t.Errorf("ListPage(search=%q) nodeID=%q,want%q", test.search, page.Results[0].NodeID, test.wantID)
+		}
+	}
+}
+
 func TestNodePageIndexes(t *testing.T) {
 	conn := setupNodePageDB(t, 20000)
 	queries := []struct {
