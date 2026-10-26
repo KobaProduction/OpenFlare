@@ -23,7 +23,7 @@ import (
 // @Produce json
 // @Security AgentTokenAuth
 // @Param body body protocol.RegisterNodeRequest true "节点上报数据；registration_key 为首次注册重试凭证"
-// @Success 200 {object} response.Any{data=agent.RegistrationResponse} "注册成功"
+// @Success 200 {object} response.Any{data=agent.RegistrationResponseDocs} "注册成功"
 // @Failure 400 {object} response.Any "参数错误"
 // @Failure 401 {object} response.Any "Token 无效"
 // @Router /api/v1/agent/nodes/register [post]

@@ -5,8 +5,11 @@ package state
 
 import (
 	"encoding/hex"
+	"errors"
 	"path/filepath"
 	"testing"
+
+	"github.com/Rain-kl/Wavelet/internal/apps/agent/localfile"
 )
 
 func TestRegistrationKeySurvivesStaleSnapshotAndRestart(t *testing.T) {
@@ -44,5 +47,38 @@ func TestRegistrationKeySurvivesStaleSnapshotAndRestart(t *testing.T) {
 	}
 	if snapshot.NodeID != "node-server-assigned" {
 		t.Errorf("Load(after stale save).NodeID = %q, want server-assigned ID", snapshot.NodeID)
+	}
+}
+
+func TestExistingRegistrationKeyRequiresDirectorySyncBeforeUse(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+	store := NewStore(path)
+	key, err := store.EnsureRegistrationKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Model a prior successful rename whose final directory flush was not confirmed.
+	syncFailure := errors.New("directory I/O failure")
+	syncCalls := 0
+	store.syncDirectory = func(dir string) error {
+		syncCalls++
+		if dir != filepath.Dir(path) {
+			t.Errorf("EnsureRegistrationKey sync directory = %q, want state parent", dir)
+		}
+		return syncFailure
+	}
+	for range 2 {
+		got, retryErr := store.EnsureRegistrationKey()
+		if got != "" || !errors.Is(retryErr, syncFailure) {
+			t.Errorf("EnsureRegistrationKey(unconfirmed directory) returned usable key or lost error: %v", retryErr)
+		}
+	}
+	if syncCalls != 2 {
+		t.Errorf("EnsureRegistrationKey(repeated failures) sync calls = %d, want 2", syncCalls)
+	}
+	store.syncDirectory = localfile.SyncDirectory
+	confirmedKey, err := store.EnsureRegistrationKey()
+	if err != nil || confirmedKey != key {
+		t.Errorf("EnsureRegistrationKey(after successful sync) changed identity or failed: %v", err)
 	}
 }

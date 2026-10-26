@@ -60,6 +60,10 @@ func (s *Store) EnsureRegistrationKey() (string, error) {
 		return "", err
 	}
 	if snapshot.RegistrationKey != "" {
+		// A previous rename may have succeeded even though its directory sync failed.
+		if err = s.syncDirectory(filepath.Dir(s.path)); err != nil {
+			return "", err
+		}
 		return snapshot.RegistrationKey, nil
 	}
 	key := make([]byte, registrationKeyBytes)
@@ -75,13 +79,14 @@ func (s *Store) EnsureRegistrationKey() (string, error) {
 
 // Store manages the storage and retrieval of the agent state snapshot.
 type Store struct {
-	path string
-	mu   sync.Mutex
+	path          string
+	mu            sync.Mutex
+	syncDirectory func(string) error
 }
 
 // NewStore creates a new Store instance at the given path.
 func NewStore(path string) *Store {
-	return &Store{path: filepath.Clean(path)}
+	return &Store{path: filepath.Clean(path), syncDirectory: localfile.SyncDirectory}
 }
 
 // Load loads the snapshot from the store.
@@ -122,6 +127,7 @@ func (s *Store) Save(snapshot *Snapshot) error {
 		return err
 	}
 	updated := *snapshot
+
 	// Other workers can hold a snapshot loaded before enrollment first persisted its key.
 	if current.RegistrationKey != "" {
 		updated.RegistrationKey = current.RegistrationKey

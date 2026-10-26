@@ -4464,7 +4464,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/agent.RegistrationResponse"
+                                            "$ref": "#/definitions/agent.RegistrationResponseDocs"
                                         }
                                     }
                                 }
@@ -14989,9 +14989,12 @@ const docTemplate = `{
                 }
             }
         },
-        "agent.RegistrationResponse": {
+        "agent.RegistrationResponseDocs": {
             "type": "object",
             "properties": {
+                "access_token": {
+                    "type": "string"
+                },
                 "agent_token": {
                     "type": "string"
                 },
