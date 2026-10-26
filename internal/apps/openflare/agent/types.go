@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Rain-kl/Wavelet/internal/model"
+	"github.com/Rain-kl/Wavelet/pkg/protocol"
 )
 
 const (
@@ -17,12 +18,7 @@ const (
 )
 
 // RegistrationResponse is returned after agent registration.
-// Server uses access_token; the agent client expects agent_token via RegisterNodeResponse.
-type RegistrationResponse struct {
-	NodeID      string `json:"node_id"`
-	AccessToken string `json:"access_token"`
-	Name        string `json:"name"`
-}
+type RegistrationResponse = protocol.RegisterNodeResponse
 
 // ConfigResponse is the full active config payload for agents.
 // Server uses time.Time for CreatedAt; the agent client uses string via ActiveConfigResponse.

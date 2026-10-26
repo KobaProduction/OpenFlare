@@ -5,6 +5,8 @@
 package node
 
 const (
+	errInvalidNodeListQuery      = "invalid node list parameters"
+	errListNodesFailed           = "Failed to load nodes"
 	errNodeNameRequired          = "node name must not be empty"
 	errNodeIPTooLong             = "Node IP must not exceed 64 characters"
 	errNodeIPInvalid             = "Invalid node IP address format"

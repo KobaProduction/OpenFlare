@@ -982,5 +982,9 @@
   "public_error_02fbf8eef643": "请提供 event_key 或 task_type",
   "public_error_7f64283d20ea": "不支持的内置事件标识",
   "public_error_eac68fcd302d": "事件 ID 无效",
-  "public_error_c854c958bd9c": "通知事件不存在"
+  "public_error_c854c958bd9c": "通知事件不存在",
+  "public_error_a37526e5d726": "自动注册重试凭证无效",
+  "public_error_452209a49676": "自动注册凭证已更换，请使用分配的 Agent Token",
+  "public_error_da739b170c48": "节点列表查询参数无效",
+  "public_error_79e7e0ad56c0": "无法加载节点"
 }

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Loader2, Plus, RefreshCw, Server } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -29,46 +29,87 @@ import {
 import { EmptyStateWithBorder } from '@/components/layout/empty';
 import { ErrorInline } from '@/components/layout/error';
 import { LoadingStateWithBorder } from '@/components/layout/loading';
-import type { NodeItem, NodeMutationPayload } from '@/lib/services/openflare';
+import type {
+  NodeItem,
+  NodeMutationPayload,
+  NodeStatus,
+  NodeType,
+} from '@/lib/services/openflare';
 import { NodeService } from '@/lib/services/openflare';
 
 import { NodeEditorDialog } from './components/node-editor-dialog';
 import {
-  filterNodesByType,
   getFilterDescription,
   getNodeFilter,
   NodeTypeFilter,
+  type NodeFilter,
 } from './components/node-type-filter';
 import { NodesTable } from './components/nodes-table';
+import { NodeListControls } from './components/node-list-controls';
 import { getErrorMessage } from './components/node-utils';
 
 const nodesQueryKey = ['openflare', 'nodes'];
 
 export function NodesPageClient() {
+  const searchParams = useSearchParams();
+  const nodeFilter = getNodeFilter(
+    new URLSearchParams(searchParams.toString()),
+  );
+  return <NodesPage key={nodeFilter} nodeFilter={nodeFilter} />;
+}
+
+function NodesPage({ nodeFilter }: { nodeFilter: NodeFilter }) {
   const t = useTranslations('nodes');
   const tc = useTranslations('common');
-  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const [editingNode, setEditingNode] = useState<NodeItem | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<NodeItem | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [status, setStatus] = useState<NodeStatus | ''>('');
 
-  const nodeFilter = useMemo(
-    () => getNodeFilter(new URLSearchParams(searchParams.toString())),
-    [searchParams],
-  );
+  useEffect(() => {
+    if (search.trim() === debouncedSearch) return;
+    const timeout = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [search, debouncedSearch]);
 
+  const nodeTypes: Record<NodeFilter, NodeType | ''> = {
+    all: '',
+    edge: 'edge_node',
+    relay: 'tunnel_relay',
+    tunnel: 'tunnel_client',
+  };
+  const query = {
+    page,
+    page_size: pageSize,
+    search: debouncedSearch,
+    status,
+    node_type: nodeTypes[nodeFilter],
+  };
   const nodesQuery = useQuery({
-    queryKey: nodesQueryKey,
-    queryFn: () => NodeService.listNodes(),
-    refetchInterval: 5000,
+    queryKey: [...nodesQueryKey, 'page', query],
+    queryFn: () => NodeService.listNodePage(query),
+    refetchInterval: (query) =>
+      query.state.status === 'error' ? false : 15000,
+    refetchIntervalInBackground: false,
   });
 
-  const nodes = useMemo(() => nodesQuery.data ?? [], [nodesQuery.data]);
-  const filteredNodes = useMemo(
-    () => filterNodesByType(nodes, nodeFilter),
-    [nodeFilter, nodes],
+  const nodes = useMemo(
+    () => nodesQuery.data?.results ?? [],
+    [nodesQuery.data],
   );
+  const total = nodesQuery.data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  if (nodesQuery.data?.page === page && page > totalPages) {
+    setPage(totalPages);
+  }
 
   const saveMutation = useMutation({
     mutationFn: async (payload: NodeMutationPayload) => {
@@ -115,7 +156,7 @@ export function NodesPageClient() {
   };
 
   return (
-    <div className='py-6 px-1 space-y-6'>
+    <div className='flex w-full flex-col gap-6 py-6 px-1'>
       <div className='flex items-center justify-between gap-3'>
         <div className='flex items-center gap-2'>
           <Server className='size-5 text-primary' />
@@ -166,8 +207,27 @@ export function NodesPageClient() {
             </Button>
           </div>
         </CardHeader>
-        <CardContent className='space-y-4'>
+        <CardContent className='flex flex-col gap-4'>
           <NodeTypeFilter />
+          <NodeListControls
+            search={search}
+            onSearchChange={setSearch}
+            status={status}
+            onStatusChange={(value) => {
+              setStatus(value);
+              setPage(1);
+            }}
+            page={page}
+            pageSize={pageSize}
+            onPageSizeChange={(value) => {
+              setPageSize(value);
+              setPage(1);
+            }}
+            total={total}
+            totalPages={totalPages}
+            loading={nodesQuery.isFetching}
+            onPageChange={setPage}
+          />
 
           {nodesQuery.isLoading ? (
             <LoadingStateWithBorder
@@ -182,16 +242,18 @@ export function NodesPageClient() {
                 className='justify-center'
               />
             </div>
-          ) : filteredNodes.length === 0 ? (
+          ) : nodes.length === 0 ? (
             <EmptyStateWithBorder
               icon={Server}
               description={
-                nodes.length === 0 ? t('emptyAll') : t('emptyFilter')
+                debouncedSearch || status || nodeFilter !== 'all'
+                  ? t('emptyFilter')
+                  : t('emptyAll')
               }
             />
           ) : (
             <NodesTable
-              nodes={filteredNodes}
+              nodes={nodes}
               deletingId={
                 deleteMutation.isPending ? (deleteTarget?.id ?? null) : null
               }

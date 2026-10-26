@@ -982,5 +982,9 @@
   "public_error_02fbf8eef643": "either event_key or task_type must be provided",
   "public_error_7f64283d20ea": "unsupported built-in event key",
   "public_error_eac68fcd302d": "invalid event id",
-  "public_error_c854c958bd9c": "notification event not found"
+  "public_error_c854c958bd9c": "notification event not found",
+  "public_error_a37526e5d726": "invalid discovery registration key",
+  "public_error_452209a49676": "discovery enrollment credential has changed; use the assigned agent token",
+  "public_error_da739b170c48": "invalid node list parameters",
+  "public_error_79e7e0ad56c0": "Failed to load nodes"
 }

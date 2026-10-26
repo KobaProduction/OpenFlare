@@ -120,6 +120,16 @@
     }
   },
   "nodes": {
+    "pagination": {
+      "search": "Search nodes",
+      "searchPlaceholder": "Name, node ID or IP",
+      "allStatuses": "All statuses",
+      "pageSize": "Per page",
+      "summary": "Page {page} of {totalPages} · {total} nodes",
+      "navigation": "Node pages",
+      "previous": "Previous",
+      "next": "Next"
+    },
     "title": "Nodes",
     "applyLogs": "Apply logs",
     "create": "Add node",

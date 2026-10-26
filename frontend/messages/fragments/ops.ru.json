@@ -120,6 +120,16 @@
     }
   },
   "nodes": {
+    "pagination": {
+      "search": "Поиск узлов",
+      "searchPlaceholder": "Имя, идентификатор узла или IP",
+      "allStatuses": "Все статусы",
+      "pageSize": "На странице",
+      "summary": "Страница {page} из {totalPages} · {total, plural, one {# узел} few {# узла} many {# узлов} other {# узла}}",
+      "navigation": "Страницы узлов",
+      "previous": "Назад",
+      "next": "Далее"
+    },
     "title": "Узлы",
     "applyLogs": "Журнал применения",
     "create": "Добавить узел",
