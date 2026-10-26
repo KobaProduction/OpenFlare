@@ -17,6 +17,8 @@ sidebar: false
 
 ## [Unreleased]
 
+- OpenTelemetry 链路追踪新增 OTLP/HTTP protobuf 导出（支持通过标准环境变量配置 Bearer 请求头），保留原有 OTLP/gRPC 默认模式；未支持的协议在启动时明确报错。
+
 ### 🛠 修复
 
 - SQLite 文件数据库启动时自动启用 WAL 模式，改善读写并发；数据库导出改用一致性快照，确保包含 WAL 中已提交的数据。
