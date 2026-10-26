@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Loader2, Plus, RefreshCw, Server } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -31,6 +31,7 @@ import { ErrorInline } from '@/components/layout/error';
 import { LoadingStateWithBorder } from '@/components/layout/loading';
 import type {
   NodeItem,
+  NodeListQuery,
   NodeMutationPayload,
   NodeStatus,
   NodeType,
@@ -71,14 +72,21 @@ function NodesPage({ nodeFilter }: { nodeFilter: NodeFilter }) {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [status, setStatus] = useState<NodeStatus | ''>('');
 
+  const resetNodeActions = useCallback(() => {
+    setEditingNode(null);
+    setEditorOpen(false);
+    setDeleteTarget(null);
+  }, []);
+
   useEffect(() => {
     if (search.trim() === debouncedSearch) return;
     const timeout = setTimeout(() => {
       setDebouncedSearch(search.trim());
       setPage(1);
+      resetNodeActions();
     }, 300);
     return () => clearTimeout(timeout);
-  }, [search, debouncedSearch]);
+  }, [search, debouncedSearch, resetNodeActions]);
 
   const nodeTypes: Record<NodeFilter, NodeType | ''> = {
     all: '',
@@ -96,6 +104,17 @@ function NodesPage({ nodeFilter }: { nodeFilter: NodeFilter }) {
   const nodesQuery = useQuery({
     queryKey: [...nodesQueryKey, 'page', query],
     queryFn: () => NodeService.listNodePage(query),
+    placeholderData: (previousData, previousQuery) => {
+      const previousParams = previousQuery?.queryKey[3] as
+        | NodeListQuery
+        | undefined;
+      return previousParams?.search === query.search &&
+        previousParams?.status === query.status &&
+        previousParams?.node_type === query.node_type &&
+        previousParams?.page_size === query.page_size
+        ? previousData
+        : undefined;
+    },
     refetchInterval: (query) =>
       query.state.status === 'error' ? false : 15000,
     refetchIntervalInBackground: false,
@@ -107,8 +126,13 @@ function NodesPage({ nodeFilter }: { nodeFilter: NodeFilter }) {
   );
   const total = nodesQuery.data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  if (nodesQuery.data?.page === page && page > totalPages) {
+  if (
+    !nodesQuery.isPlaceholderData &&
+    nodesQuery.data?.page === page &&
+    page > totalPages
+  ) {
     setPage(totalPages);
+    resetNodeActions();
   }
 
   const saveMutation = useMutation({
@@ -147,6 +171,7 @@ function NodesPage({ nodeFilter }: { nodeFilter: NodeFilter }) {
   };
 
   const handleEdit = (node: NodeItem) => {
+    if (nodesQuery.isPlaceholderData) return;
     setEditingNode(node);
     setEditorOpen(true);
   };
@@ -216,17 +241,23 @@ function NodesPage({ nodeFilter }: { nodeFilter: NodeFilter }) {
             onStatusChange={(value) => {
               setStatus(value);
               setPage(1);
+              resetNodeActions();
             }}
-            page={page}
+            page={nodesQuery.data?.page ?? page}
             pageSize={pageSize}
             onPageSizeChange={(value) => {
               setPageSize(value);
               setPage(1);
+              resetNodeActions();
             }}
             total={total}
             totalPages={totalPages}
-            loading={nodesQuery.isFetching}
-            onPageChange={setPage}
+            loading={nodesQuery.isFetching || nodesQuery.isPlaceholderData}
+            hasData={Boolean(nodesQuery.data)}
+            onPageChange={(value) => {
+              setPage(value);
+              resetNodeActions();
+            }}
           />
 
           {nodesQuery.isLoading ? (
@@ -258,7 +289,10 @@ function NodesPage({ nodeFilter }: { nodeFilter: NodeFilter }) {
                 deleteMutation.isPending ? (deleteTarget?.id ?? null) : null
               }
               onEdit={handleEdit}
-              onDelete={setDeleteTarget}
+              onDelete={(node) => {
+                if (!nodesQuery.isPlaceholderData) setDeleteTarget(node);
+              }}
+              actionsDisabled={nodesQuery.isPlaceholderData}
             />
           )}
         </CardContent>
@@ -267,13 +301,17 @@ function NodesPage({ nodeFilter }: { nodeFilter: NodeFilter }) {
       <NodeEditorDialog
         open={editorOpen}
         node={editingNode}
-        submitting={saveMutation.isPending}
+        submitting={
+          saveMutation.isPending ||
+          (Boolean(editingNode) && nodesQuery.isPlaceholderData)
+        }
         onClose={() => {
           setEditorOpen(false);
           setEditingNode(null);
         }}
         onSubmit={async (payload) => {
-          await saveMutation.mutateAsync(payload);
+          if (!editingNode || !nodesQuery.isPlaceholderData)
+            await saveMutation.mutateAsync(payload);
         }}
       />
 
@@ -289,14 +327,22 @@ function NodesPage({ nodeFilter }: { nodeFilter: NodeFilter }) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMutation.isPending}>
+            <AlertDialogCancel
+              disabled={
+                deleteMutation.isPending || nodesQuery.isPlaceholderData
+              }
+            >
               {tc('cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               className='bg-destructive text-white hover:bg-destructive/90'
-              disabled={deleteMutation.isPending}
+              disabled={
+                deleteMutation.isPending || nodesQuery.isPlaceholderData
+              }
               onClick={() =>
-                deleteTarget && deleteMutation.mutate(deleteTarget.id)
+                deleteTarget &&
+                !nodesQuery.isPlaceholderData &&
+                deleteMutation.mutate(deleteTarget.id)
               }
             >
               {deleteMutation.isPending ? t('deleting') : t('confirmDelete')}

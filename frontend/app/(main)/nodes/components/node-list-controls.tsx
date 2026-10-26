@@ -24,6 +24,7 @@ export function NodeListControls({
   total,
   totalPages,
   loading,
+  hasData,
   onPageChange,
 }: {
   search: string;
@@ -36,6 +37,7 @@ export function NodeListControls({
   total: number;
   totalPages: number;
   loading: boolean;
+  hasData: boolean;
   onPageChange: (value: number) => void;
 }) {
   const t = useTranslations('nodes');
@@ -103,14 +105,16 @@ export function NodeListControls({
         </Field>
       </FieldGroup>
       <div className='flex flex-wrap items-center justify-between gap-3'>
-        <p className='text-sm text-muted-foreground' aria-live='polite'>
-          {t('pagination.summary', { page, totalPages, total })}
-        </p>
+        {hasData && (
+          <p className='text-sm text-muted-foreground' aria-live='polite'>
+            {t('pagination.summary', { page, totalPages, total })}
+          </p>
+        )}
         <nav aria-label={t('pagination.navigation')} className='flex gap-2'>
           <Button
             variant='outline'
             size='sm'
-            disabled={loading || page <= 1}
+            disabled={!hasData || loading || page <= 1}
             onClick={() => onPageChange(page - 1)}
           >
             {t('pagination.previous')}
@@ -118,7 +122,7 @@ export function NodeListControls({
           <Button
             variant='outline'
             size='sm'
-            disabled={loading || page >= totalPages}
+            disabled={!hasData || loading || page >= totalPages}
             onClick={() => onPageChange(page + 1)}
           >
             {t('pagination.next')}

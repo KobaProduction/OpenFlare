@@ -32,9 +32,9 @@ func ListOpenFlareNodePage(ctx context.Context, query model.OpenFlareNodeListQue
 
 func filterOpenFlareNodes(query *gorm.DB, filters model.OpenFlareNodeListQuery) *gorm.DB {
 	if filters.Search != "" {
-		escaped := strings.NewReplacer("!", "!!", "%", "!%", "_", "!_").Replace(strings.ToLower(filters.Search))
+		escaped := strings.NewReplacer("!", "!!", "%", "!%", "_", "!_").Replace(filters.Search)
 		pattern := "%" + escaped + "%"
-		query = query.Where("(LOWER(name) LIKE ? ESCAPE '!' OR LOWER(node_id) LIKE ? ESCAPE '!' OR LOWER(ip) LIKE ? ESCAPE '!')", pattern, pattern, pattern)
+		query = query.Where("(LOWER(name) LIKE LOWER(?) ESCAPE '!' OR LOWER(node_id) LIKE LOWER(?) ESCAPE '!' OR LOWER(ip) LIKE LOWER(?) ESCAPE '!')", pattern, pattern, pattern)
 	}
 	if filters.NodeType == "edge_node" {
 		query = query.Where("(node_type = ? OR node_type = '')", filters.NodeType)
