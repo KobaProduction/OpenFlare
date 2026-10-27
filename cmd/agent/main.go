@@ -128,6 +128,9 @@ func main() {
 		WebSocketService: wsClient,
 	}
 
+	shutdownTelemetry := initAgentTelemetry()
+	defer shutdownTelemetry()
+
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	geoIPUpdater := newGeoIPUpdater(cfg)
 	if err = geoIPUpdater.EnsureInitialDatabases(ctx); err != nil {
@@ -139,6 +142,7 @@ func main() {
 	if err = runner.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
 		slog.Error("agent process exited with error", "error", err)
 		stop()
+		shutdownTelemetry()
 		os.Exit(1)
 	}
 	stop()
