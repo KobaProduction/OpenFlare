@@ -6,9 +6,6 @@ package heartbeat
 import (
 	"context"
 
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/codes"
-
 	"github.com/Rain-kl/Wavelet/internal/apps/agent/protocol"
 )
 
@@ -43,14 +40,7 @@ func (s *Service) Register(ctx context.Context, payload protocol.RegisterNodeReq
 
 // Heartbeat sends a heartbeat to the server using the service client.
 func (s *Service) Heartbeat(ctx context.Context, payload protocol.NodePayload) (*protocol.HeartbeatResult, error) {
-	ctx, span := otel.Tracer("agent").Start(ctx, "agent.heartbeat")
-	defer span.End()
-	result, err := s.client.Heartbeat(ctx, payload)
-	if err != nil {
-		// Do not attach raw errors: HTTP errors may include credentials or URLs.
-		span.SetStatus(codes.Error, "heartbeat failed")
-	}
-	return result, err
+	return s.client.Heartbeat(ctx, payload)
 }
 
 // SetToken sets the authentication token for the service client.

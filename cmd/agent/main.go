@@ -11,10 +11,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
-	"strconv"
-	"strings"
 	"syscall"
-	"time"
 
 	"github.com/Rain-kl/Wavelet/internal/apps/agent/agent"
 	"github.com/Rain-kl/Wavelet/internal/apps/agent/config"
@@ -28,7 +25,6 @@ import (
 	syncservice "github.com/Rain-kl/Wavelet/internal/apps/agent/sync"
 	"github.com/Rain-kl/Wavelet/internal/apps/agent/updater"
 	"github.com/Rain-kl/Wavelet/internal/apps/agent/wsclient"
-	"github.com/Rain-kl/Wavelet/pkg/trace"
 )
 
 func main() {
@@ -132,9 +128,6 @@ func main() {
 		WebSocketService: wsClient,
 	}
 
-	shutdownTelemetry := initAgentTelemetry()
-	defer shutdownTelemetry()
-
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	geoIPUpdater := newGeoIPUpdater(cfg)
 	if err = geoIPUpdater.EnsureInitialDatabases(ctx); err != nil {
@@ -146,35 +139,10 @@ func main() {
 	if err = runner.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
 		slog.Error("agent process exited with error", "error", err)
 		stop()
-		shutdownTelemetry()
 		os.Exit(1)
 	}
 	stop()
 	slog.Info("agent process stopped")
-}
-
-// initAgentTelemetry enables tracing only when an OTLP endpoint is supplied.
-// Existing installations without collector configuration continue unmodified.
-func initAgentTelemetry() func() {
-	if strings.TrimSpace(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")) == "" {
-		return func() {}
-	}
-	serviceName := strings.TrimSpace(os.Getenv("OTEL_SERVICE_NAME"))
-	if serviceName == "" {
-		serviceName = "OpenFlare Node"
-	}
-	samplingRate := 0.1
-	if raw := strings.TrimSpace(os.Getenv("OTEL_SAMPLING_RATE")); raw != "" {
-		if v, err := strconv.ParseFloat(raw, 64); err == nil && v >= 0 && v <= 1 {
-			samplingRate = v
-		}
-	}
-	trace.Init(trace.Config{AppName: serviceName, SamplingRate: samplingRate, TracerName: "agent"})
-	return func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		trace.Shutdown(ctx)
-	}
 }
 
 func newGeoIPUpdater(cfg *config.Config) *geoipupdate.Updater {
