@@ -6,6 +6,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -28,24 +29,6 @@ vi.mock('@/lib/services/openflare', async (importOriginal) => ({
 }));
 vi.mock('@/app/(main)/nodes/components/node-editor-dialog', () => ({
   NodeEditorDialog: () => null,
-}));
-vi.mock('@/app/(main)/nodes/components/nodes-table', () => ({
-  NodesTable: ({
-    nodes,
-    onDelete,
-  }: {
-    nodes: NodeItem[];
-    onDelete: (node: NodeItem) => void;
-  }) => (
-    <div>
-      {nodes.map((node) => (
-        <div key={node.id}>
-          {node.name}
-          <button onClick={() => onDelete(node)}>Delete {node.id}</button>
-        </div>
-      ))}
-    </div>
-  ),
 }));
 vi.mock('@/app/(main)/nodes/components/edge-node-detail', () => ({
   EdgeNodeDetail: ({ node }: { node: NodeItem }) => (
@@ -129,8 +112,12 @@ it('refetches the previous valid page after deleting the only node on the last p
   await screen.findByText('Edge 1');
   fireEvent.click(screen.getByRole('button', { name: 'Next' }));
   await screen.findByText('Edge 21');
-  fireEvent.click(screen.getByRole('button', { name: 'Delete 21' }));
-  fireEvent.click(await screen.findByRole('button', { name: 'Delete' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+  fireEvent.click(
+    within(await screen.findByRole('alertdialog')).getByRole('button', {
+      name: 'Delete',
+    }),
+  );
   await waitFor(() =>
     expect(NodeService.listNodePage).toHaveBeenLastCalledWith(
       expect.objectContaining({ page: 1 }),
@@ -180,4 +167,177 @@ it('fetches one detail and refetches it on shared node invalidation', async () =
     await client.invalidateQueries({ queryKey: ['openflare', 'nodes'] });
   });
   expect(NodeService.getNode).toHaveBeenCalledTimes(2);
+});
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: Error) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
+
+it('validates the UTF-8 search limit before requesting and recovers after shortening', async () => {
+  renderPage();
+  await screen.findByText('Edge 1');
+  const input = screen.getByLabelText('Search nodes');
+  for (const search of ['a'.repeat(256), '汉'.repeat(85) + 'a']) {
+    fireEvent.change(input, { target: { value: search } });
+    await waitFor(() =>
+      expect(NodeService.listNodePage).toHaveBeenLastCalledWith(
+        expect.objectContaining({ search }),
+      ),
+    );
+  }
+  const calls = vi.mocked(NodeService.listNodePage).mock.calls.length;
+  fireEvent.change(input, { target: { value: '汉'.repeat(86) } });
+  expect(input).toHaveAttribute('aria-invalid', 'true');
+  expect(screen.getByRole('alert')).toHaveTextContent(
+    'Search text is too long',
+  );
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 350));
+  });
+  expect(NodeService.listNodePage).toHaveBeenCalledTimes(calls);
+  fireEvent.change(input, { target: { value: 'short' } });
+  await waitFor(() =>
+    expect(NodeService.listNodePage).toHaveBeenLastCalledWith(
+      expect.objectContaining({ search: 'short' }),
+    ),
+  );
+  expect(input).not.toHaveAttribute('aria-invalid');
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+});
+
+it('retains the loaded page and total during navigation without leaving stale node actions', async () => {
+  const pending =
+    deferred<Awaited<ReturnType<typeof NodeService.listNodePage>>>();
+  vi.mocked(NodeService.listNodePage).mockImplementation(async (query = {}) =>
+    query.page === 2
+      ? pending.promise
+      : { page: 1, page_size: 20, total: 41, results: [node(1)] },
+  );
+  renderPage();
+  await screen.findByText('Edge 1');
+  expect(screen.getByRole('link', { name: 'Details' })).toHaveAttribute(
+    'href',
+    '/nodes/detail?id=1',
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeDisabled(),
+  );
+  expect(screen.getByText('Edge 1')).toBeInTheDocument();
+  expect(screen.getByText('Page 1 of 3 · 41 nodes')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Details' })).toBeDisabled();
+  expect(
+    screen.queryByRole('link', { name: 'Details' }),
+  ).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+  expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  expect(NodeService.deleteNode).not.toHaveBeenCalled();
+  await act(async () => {
+    pending.resolve({ page: 2, page_size: 20, total: 41, results: [node(2)] });
+  });
+  await screen.findByText('Edge 2');
+  expect(screen.queryByText('Edge 1')).not.toBeInTheDocument();
+  expect(screen.getByText('Page 2 of 3 · 41 nodes')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Edit' })).toBeEnabled();
+  expect(screen.getByRole('link', { name: 'Details' })).toHaveAttribute(
+    'href',
+    '/nodes/detail?id=2',
+  );
+});
+
+it('does not reuse nodes or totals from a different search while it is loading', async () => {
+  const pending =
+    deferred<Awaited<ReturnType<typeof NodeService.listNodePage>>>();
+  vi.mocked(NodeService.listNodePage).mockImplementation(async (query = {}) =>
+    query.search
+      ? pending.promise
+      : { page: 1, page_size: 20, total: 41, results: [node(1)] },
+  );
+  renderPage();
+  await screen.findByText('Edge 1');
+  fireEvent.change(screen.getByLabelText('Search nodes'), {
+    target: { value: 'another' },
+  });
+  await waitFor(() =>
+    expect(NodeService.listNodePage).toHaveBeenLastCalledWith(
+      expect.objectContaining({ search: 'another' }),
+    ),
+  );
+  expect(screen.queryByText('Edge 1')).not.toBeInTheDocument();
+  expect(screen.queryByText('Page 1 of 3 · 41 nodes')).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('link', { name: 'Details' }),
+  ).not.toBeInTheDocument();
+  await act(async () => {
+    pending.resolve({ page: 1, page_size: 20, total: 1, results: [node(9)] });
+  });
+  await screen.findByText('Edge 9');
+  expect(screen.getByText('Page 1 of 1 · 1 nodes')).toBeInTheDocument();
+});
+
+it('drops placeholder actions and unknown totals after a failed page request and allows retry', async () => {
+  const pending =
+    deferred<Awaited<ReturnType<typeof NodeService.listNodePage>>>();
+  vi.mocked(NodeService.listNodePage).mockImplementation(async (query = {}) =>
+    query.page === 2
+      ? pending.promise
+      : { page: 1, page_size: 20, total: 41, results: [node(1)] },
+  );
+  renderPage();
+  await screen.findByText('Edge 1');
+  fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeDisabled(),
+  );
+  await act(async () => {
+    pending.reject(new Error('page request failed'));
+  });
+  await screen.findByText('page request failed');
+  expect(screen.queryByText('Edge 1')).not.toBeInTheDocument();
+  expect(screen.queryByText(/Page [0-9]+ of/)).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: 'Delete' }),
+  ).not.toBeInTheDocument();
+  vi.mocked(NodeService.listNodePage).mockResolvedValue({
+    page: 2,
+    page_size: 20,
+    total: 41,
+    results: [node(2)],
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Refresh now' }));
+  await screen.findByText('Edge 2');
+  expect(screen.getByText('Page 2 of 3 · 41 nodes')).toBeInTheDocument();
+});
+
+it('closes an open node confirmation when a background refresh clamps a depleted page', async () => {
+  let removed = false;
+  vi.mocked(NodeService.listNodePage).mockImplementation(
+    async (query = {}) => ({
+      page: query.page ?? 1,
+      page_size: 20,
+      total: removed ? 20 : 21,
+      results:
+        removed && query.page === 2 ? [] : [node(query.page === 2 ? 21 : 1)],
+    }),
+  );
+  const { client } = renderPage();
+  await screen.findByText('Edge 1');
+  fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+  await screen.findByText('Edge 21');
+  fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+  await screen.findByRole('alertdialog');
+  removed = true;
+  await act(async () => {
+    await client.invalidateQueries({ queryKey: ['openflare', 'nodes'] });
+  });
+  await screen.findByText('Edge 1');
+  expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  expect(NodeService.deleteNode).not.toHaveBeenCalled();
 });

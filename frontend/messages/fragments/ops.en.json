@@ -123,6 +123,7 @@
     "pagination": {
       "search": "Search nodes",
       "searchPlaceholder": "Name, node ID or IP",
+      "searchTooLong": "Search text is too long. Shorten it to continue.",
       "allStatuses": "All statuses",
       "pageSize": "Per page",
       "summary": "Page {page} of {totalPages} · {total} nodes",

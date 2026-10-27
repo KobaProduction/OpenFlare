@@ -20,6 +20,15 @@ const (
 // RegistrationResponse is returned after agent registration.
 type RegistrationResponse = protocol.RegisterNodeResponse
 
+// RegistrationResponseDocs describes both token aliases emitted by the custom JSON marshaler.
+// It is used only by Swagger; the runtime contract remains protocol.RegisterNodeResponse.
+type RegistrationResponseDocs struct {
+	NodeID      string `json:"node_id"`
+	AgentToken  string `json:"agent_token"`
+	AccessToken string `json:"access_token"`
+	Name        string `json:"name"`
+}
+
 // ConfigResponse is the full active config payload for agents.
 // Server uses time.Time for CreatedAt; the agent client uses string via ActiveConfigResponse.
 type ConfigResponse struct {

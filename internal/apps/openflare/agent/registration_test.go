@@ -47,6 +47,13 @@ func TestRegistrationResponseServerClientContract(t *testing.T) {
 	if err = json.Unmarshal(data, &legacy); err != nil || legacy.AccessToken != "issued" {
 		t.Errorf("Decode legacy server response = %q, %v; want issued, nil", legacy.AccessToken, err)
 	}
+	var documented RegistrationResponseDocs
+	if err = json.Unmarshal(data, &documented); err != nil {
+		t.Fatal(err)
+	}
+	if documented.AgentToken != "issued" || documented.AccessToken != documented.AgentToken {
+		t.Error("RegistrationResponseDocs does not describe both emitted token aliases")
+	}
 }
 
 func TestDiscoveryRetriesKeepOneIdentityAndPreserveChanges(t *testing.T) {

@@ -99,8 +99,10 @@ definitions:
           type: string
         type: object
     type: object
-  agent.RegistrationResponse:
+  agent.RegistrationResponseDocs:
     properties:
+      access_token:
+        type: string
       agent_token:
         type: string
       name:
@@ -7096,7 +7098,7 @@ paths:
             - $ref: '#/definitions/response.Any'
             - properties:
                 data:
-                  $ref: '#/definitions/agent.RegistrationResponse'
+                  $ref: '#/definitions/agent.RegistrationResponseDocs'
               type: object
         "400":
           description: 参数错误
