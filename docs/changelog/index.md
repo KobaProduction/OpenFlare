@@ -17,6 +17,8 @@ sidebar: false
 
 ## [Unreleased]
 
+- Agent 在配置 OTLP/HTTP 时新增受保护的链路追踪初始化与心跳操作跨度，保留未配置遥测的旧节点行为；服务名称可独立覆盖，默认使用 OpenFlare Node。
+
 - OpenTelemetry 链路追踪新增 OTLP/HTTP protobuf 导出（支持通过标准环境变量配置 Bearer 请求头），保留原有 OTLP/gRPC 默认模式；未支持的协议在启动时明确报错。
 
 ### 🛠 修复
